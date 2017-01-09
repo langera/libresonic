@@ -16,7 +16,7 @@
 </h1>
 
 <h2>
-<c:forTokens items="${categories}" delims=" " var="cat" varStatus="loopStatus">
+<c:forEach items="${fn:split(categories,' ')}" var="cat" varStatus="loopStatus">
     <c:choose>
         <c:when test="${loopStatus.count > 1 and  (loopStatus.count - 1) % 8 != 0}">&nbsp;|&nbsp;</c:when>
         <c:otherwise></h2><h2></c:otherwise>
@@ -33,7 +33,7 @@
         </c:otherwise>
     </c:choose>
 
-</c:forTokens>
+</c:forEach>
 </h2>
 
 <p></p>

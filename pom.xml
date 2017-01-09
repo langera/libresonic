@@ -21,6 +21,15 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>http://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
             <id>local1</id>
             <name>Local Repository</name>
             <url>file://${project.basedir}/../repo</url>
@@ -128,6 +137,11 @@
                     <groupId>org.jvnet.jaxb2.maven2</groupId>
                     <artifactId>maven-jaxb2-plugin</artifactId>
                     <version>0.8.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>maven-jetty-plugin</artifactId>
+                    <version>9.3.12.v20160915</version>
                 </plugin>
             </plugins>
         </pluginManagement>
