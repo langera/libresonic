@@ -75,10 +75,10 @@
                 <form:option value="-1" label="${never}"/>
                 <form:option value="1" label="${one}"/>
 
-                <c:forTokens items="2 3 7 14 30 60" delims=" " var="interval">
+                <c:forEach items="${fn:split('2,3,7,14,30,60',',')}" var="interval">
                     <fmt:message key="musicfoldersettings.interval.many" var="many"><fmt:param value="${interval}"/></fmt:message>
                     <form:option value="${interval}" label="${many}"/>
-                </c:forTokens>
+                </c:forEach>
             </form:select>
             <form:select path="hour">
                 <c:forEach begin="0" end="23" var="hour">

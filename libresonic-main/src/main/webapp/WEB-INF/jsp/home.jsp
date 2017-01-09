@@ -41,7 +41,7 @@
 </c:if>
 
 <h2>
-    <c:forTokens items="random newest starred highest frequent recent decade genre alphabetical" delims=" " var="cat" varStatus="loopStatus">
+    <c:forEach items="${fn:split('random newest starred highest frequent recent decade genre alphabetical',' ')}" var="cat" varStatus="loopStatus">
         <c:if test="${loopStatus.count > 1}">&nbsp;|&nbsp;</c:if>
         <sub:url var="url" value="home.view">
             <sub:param name="listType" value="${cat}"/>
@@ -56,7 +56,7 @@
             </c:otherwise>
         </c:choose>
 
-    </c:forTokens>
+    </c:forEach>
 </h2>
 
 <%@ include file="homePager.jsp" %>

@@ -42,10 +42,10 @@
                 <form:option value="-1" label="${all}"/>
                 <form:option value="1" label="${one}"/>
 
-                <c:forTokens items="2 3 4 5 10 20 30 50" delims=" " var="count">
+                <c:forEach items="${fn:split('2,3,4,5,10,20,30,50',',')}" var="count">
                     <fmt:message key="podcastsettings.keep.many" var="many"><fmt:param value="${count}"/></fmt:message>
                     <form:option value="${count}" label="${many}"/>
-                </c:forTokens>
+                </c:forEach>
 
             </form:select>
         </td>
@@ -62,10 +62,10 @@
                 <form:option value="-1" label="${all}"/>
                 <form:option value="1" label="${one}"/>
 
-                <c:forTokens items="2 3 4 5 10" delims=" " var="count">
+                <c:forEach items="${fn:split('2,3,4,5,10',',')}" var="count">
                     <fmt:message key="podcastsettings.download.many" var="many"><fmt:param value="${count}"/></fmt:message>
                     <form:option value="${count}" label="${many}"/>
-                </c:forTokens>
+                </c:forEach>
                 <form:option value="0" label="${none}"/>
 
             </form:select>
