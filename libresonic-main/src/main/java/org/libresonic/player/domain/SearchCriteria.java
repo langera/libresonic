@@ -56,4 +56,13 @@ public class SearchCriteria {
     public void setCount(int count) {
         this.count = count;
     }
+
+    @Override
+    public String toString() {
+        return "SearchCriteria{" +
+            "query='" + query + '\'' +
+            ", offset=" + offset +
+            ", count=" + count +
+            '}';
+    }
 }

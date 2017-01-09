@@ -24,10 +24,15 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.Analyzer;
@@ -177,6 +182,9 @@ public class SearchService {
     }
 
     public SearchResult search(SearchCriteria criteria, List<MusicFolder> musicFolders, IndexType indexType) {
+        if (indexType == IndexType.ALL) {
+            return searchAll(criteria, musicFolders);
+        }
         SearchResult result = new SearchResult();
         int offset = criteria.getOffset();
         int count = criteria.getCount();
@@ -229,14 +237,19 @@ public class SearchService {
                         break;
                 }
             }
-
+            LOG.info("** Search: " + query + ", Total Hits: " + result.getTotalHits());
         } catch (Throwable x) {
-            LOG.error("Failed to execute Lucene search.", x);
+            LOG.error("Failed to execute Lucene search. " + criteria, x);
         } finally {
             FileUtil.closeQuietly(reader);
         }
         return result;
     }
+
+    private SearchResult searchAll(final SearchCriteria criteria, final List<MusicFolder> musicFolders) {
+        LOG.info("** Search ALL " + criteria.getQuery() + " - Revert to ALBUM");
+        return search(criteria, musicFolders, IndexType.ALBUM);
+   }
 
     private String analyzeQuery(String query) throws IOException {
         StringBuilder result = new StringBuilder();
@@ -448,6 +461,38 @@ public class SearchService {
 
     public static enum IndexType {
 
+        ALL(new String[]{FIELD_TITLE, FIELD_ALBUM, FIELD_ARTIST, FIELD_FOLDER}, FIELD_TITLE) {
+            @Override
+            public Document createDocument(MediaFile mediaFile) {
+                Document doc = new Document();
+                doc.add(new NumericField(FIELD_ID, Field.Store.YES, false).setIntValue(mediaFile.getId()));
+                doc.add(new Field(FIELD_MEDIA_TYPE, mediaFile.getMediaType().name(), Field.Store.NO, Field.Index.ANALYZED_NO_NORMS));
+
+                if (mediaFile.getTitle() != null) {
+                    doc.add(new Field(FIELD_TITLE, mediaFile.getTitle(), Field.Store.YES, Field.Index.ANALYZED));
+                }
+                if (mediaFile.getArtist() != null) {
+                    doc.add(new Field(FIELD_ARTIST, mediaFile.getArtist(), Field.Store.YES, Field.Index.ANALYZED));
+                }
+                if (mediaFile.getAlbumName() != null) {
+                    doc.add(new Field(FIELD_ALBUM, mediaFile.getAlbumName(), Field.Store.YES, Field.Index.ANALYZED));
+                }
+                if (mediaFile.getFolder() != null) {
+                    doc.add(new Field(FIELD_FOLDER, mediaFile.getFolder(), Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+                }
+                if (mediaFile.getGenre() != null) {
+                    doc.add(new Field(FIELD_GENRE, normalizeGenre(mediaFile.getGenre()), Field.Store.NO, Field.Index.ANALYZED));
+                }
+                if (mediaFile.getYear() != null) {
+                    doc.add(new NumericField(FIELD_YEAR, Field.Store.NO, true).setIntValue(mediaFile.getYear()));
+                }
+                if (mediaFile.getFolder() != null) {
+                    doc.add(new Field(FIELD_FOLDER, mediaFile.getFolder(), Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+                }
+
+                return doc;
+            }
+        },
         SONG(new String[]{FIELD_TITLE, FIELD_ARTIST}, FIELD_TITLE) {
             @Override
             public Document createDocument(MediaFile mediaFile) {
