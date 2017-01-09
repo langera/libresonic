@@ -7,6 +7,7 @@
                 <Category mappedId="search-artists" id="artists"/>
                 <Category mappedId="search-albums" id="albums"/>
                 <Category mappedId="search-songs" id="tracks"/>
+                <CustomCategory mappedId="my:custom:smapi_id:amir" stringId="amir"/>
             </SearchCategories>
         </Match>
     </PresentationMap>

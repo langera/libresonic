@@ -134,6 +134,7 @@ public class SonosService implements SonosSoap {
     public static final String ID_SEARCH_ARTISTS = "search-artists";
     public static final String ID_SEARCH_ALBUMS = "search-albums";
     public static final String ID_SEARCH_SONGS = "search-songs";
+    public static final String ID_SEARCH_AMIR = "my:custom:smapi_id:amir";
 
     private SonosHelper sonosHelper;
     private MediaFileService mediaFileService;
@@ -320,6 +321,7 @@ public class SonosService implements SonosSoap {
     @Override
     public SearchResponse search(Search parameters) {
         String id = parameters.getId();
+        LOG.info("** " + id + ", term: " + parameters.getTerm() + ", index:" + parameters.getIndex() + ", count:" + parameters.getCount());
 
         SearchService.IndexType indexType;
         if (ID_SEARCH_ARTISTS.equals(id)) {
@@ -328,6 +330,8 @@ public class SonosService implements SonosSoap {
             indexType = SearchService.IndexType.ALBUM;
         } else if (ID_SEARCH_SONGS.equals(id)) {
             indexType = SearchService.IndexType.SONG;
+        } else if (ID_SEARCH_AMIR.equals(id)) {
+            indexType = SearchService.IndexType.ALL;
         } else {
             throw new IllegalArgumentException("Invalid search category: " + id);
         }
