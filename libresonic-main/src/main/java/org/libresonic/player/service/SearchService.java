@@ -65,6 +65,7 @@ import org.libresonic.player.domain.SearchResult;
 import org.libresonic.player.util.FileUtil;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -74,6 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY;
 import static org.libresonic.player.service.SearchService.IndexType.ALBUM;
 import static org.libresonic.player.service.SearchService.IndexType.ALBUM_ID3;
 import static org.libresonic.player.service.SearchService.IndexType.ARTIST;
@@ -182,9 +184,13 @@ public class SearchService {
         if (indexType == IndexType.ALL) {
             return searchAll(criteria, musicFolders);
         }
-        SearchResult result = new SearchResult();
+        return singleSearch(criteria, musicFolders, indexType);
+    }
+
+    private SearchResult singleSearch(SearchCriteria criteria, List<MusicFolder> musicFolders, IndexType indexType) {
         int offset = criteria.getOffset();
         int count = criteria.getCount();
+        SearchResult result = new SearchResult(count);
         result.setOffset(offset);
 
         IndexReader reader = null;
@@ -219,11 +225,11 @@ public class SearchService {
                     case SONG:
                     case ARTIST:
                     case ALBUM:
-                        MediaFile mediaFile = mediaFileService.getMediaFile(Integer.valueOf(doc.get(FIELD_ID)));
-                        addIfNotNull(mediaFile, result.getMediaFiles());
+                        final MediaFile mediaFile = mediaFileService.getMediaFile(Integer.valueOf(doc.get(FIELD_ID)));
                         if (mediaFile != null) {
                             final float score = topDocs.scoreDocs[i].score;
                             mediaFile.setScore(score);
+                            result.addMediaFile(mediaFile);
                         }
                         break;
                     case ARTIST_ID3:
@@ -248,8 +254,37 @@ public class SearchService {
     }
 
     private SearchResult searchAll(final SearchCriteria criteria, final List<MusicFolder> musicFolders) {
-        LOG.info("** Search ALL " + criteria.getQuery() + " - Revert to ALBUM");
-        return search(criteria, musicFolders, IndexType.ALBUM);
+        if (criteria.getQuery().length() <= 3) {
+            LOG.info("** Search ALL " + criteria.getQuery() + " - Revert to ALBUM");
+            return singleSearch(criteria, musicFolders, IndexType.ALBUM);
+        }
+        SearchResult albums = singleSearch(criteria, musicFolders, IndexType.ALBUM);
+        SearchResult songs = singleSearch(criteria, musicFolders, IndexType.SONG);
+        SearchResult artists = singleSearch(criteria, musicFolders, IndexType.ARTIST);
+
+        Map<File, Float> addedAlbums = new HashMap<>();
+        for (MediaFile song : songs.getMediaFiles()) {
+            final Float current = addedAlbums.putIfAbsent(song.getParentFile(), song.getScore());
+            if (current != null && current < song.getScore()) {
+                addedAlbums.put(song.getParentFile(), song.getScore());
+            }
+        }
+        for (MediaFile artist : artists.getMediaFiles()) {
+            for (File albumByArtist : artist.getFile().listFiles((FileFilter) DIRECTORY)) {
+                final Float current = addedAlbums.putIfAbsent(albumByArtist, artist.getScore());
+                if (current != null && current < artist.getScore()) {
+                    addedAlbums.put(albumByArtist, artist.getScore());
+                }
+            }
+        }
+        for (Map.Entry<File, Float> albumToAdd : addedAlbums.entrySet()) {
+            final MediaFile mediaFile = mediaFileService.getMediaFile(albumToAdd.getKey());
+            mediaFile.setScore(albumToAdd.getValue());
+            albums.addMediaFile(mediaFile);
+        }
+        albums.setTotalHits(albums.getTotalHits() + addedAlbums.size()); // TODO not accurate, does it matter?
+        LOG.info("** Search ALL " + criteria.getQuery() + " added " + addedAlbums.size());
+        return albums;
    }
 
     private String analyzeQuery(String query) throws IOException {

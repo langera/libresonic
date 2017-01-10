@@ -19,11 +19,16 @@
  */
 package org.libresonic.player.domain;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.libresonic.player.service.MediaScannerService;
 import org.libresonic.player.service.SearchService;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The outcome of a search.
@@ -33,15 +38,32 @@ import org.libresonic.player.service.SearchService;
  */
 public class SearchResult {
 
-    private final List<MediaFile> mediaFiles = new ArrayList<MediaFile>();
+    private final Map<File, MediaFile> mediaFilesByFileMap = new HashMap<>();
     private final List<Artist> artists = new ArrayList<Artist>();
     private final List<Album> albums = new ArrayList<Album>();
 
     private int offset;
     private int totalHits;
+    private final int limit;
+
+    public SearchResult() {
+        this(Integer.MAX_VALUE);
+    }
+
+    public SearchResult(final int limit) {
+        this.limit = limit;
+    }
 
     public List<MediaFile> getMediaFiles() {
-        return mediaFiles;
+        final ArrayList<MediaFile> mediaFiles = new ArrayList<>(mediaFilesByFileMap.values());
+        Collections.sort(mediaFiles, new Comparator<MediaFile>() {
+            @Override
+            public int compare(MediaFile o1, MediaFile o2) {
+                final float diff = o1.getScore() - o2.getScore();
+                return diff == 0 ? 0 : diff < 0 ? 1 : -1;
+            }
+        });
+        return (mediaFiles.size() > limit) ? mediaFiles.subList(0, limit) : mediaFiles;
     }
 
     public List<Artist> getArtists() {
@@ -60,11 +82,27 @@ public class SearchResult {
         this.offset = offset;
     }
 
-      public int getTotalHits() {
+    public int getTotalHits() {
         return totalHits;
     }
 
     public void setTotalHits(int totalHits) {
         this.totalHits = totalHits;
     }
+
+    public void addMediaFile(final MediaFile mediaFile) {
+        final MediaFile current = mediaFilesByFileMap.putIfAbsent(mediaFile.getFile(), mediaFile);
+        if (current != null) {
+            current.setScore(Math.max(current.getScore(), mediaFile.getScore()));
+        }
+    }
+
+    public Set<File> getFiles() {
+        return mediaFilesByFileMap.keySet();
+    }
+
+    public int getSize() {
+        return Math.min(mediaFilesByFileMap.size(), limit);
+    }
+
 }
