@@ -19,16 +19,14 @@
  */
 package org.libresonic.player.domain;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import org.apache.commons.io.FilenameUtils;
+import org.libresonic.player.util.FileUtil;
+
 import java.io.File;
 import java.util.Date;
 import java.util.List;
-
-import org.apache.commons.io.FilenameUtils;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-
-import org.libresonic.player.util.FileUtil;
 
 /**
  * A media file (audio, video or directory) with an assortment of its meta data.
@@ -69,6 +67,7 @@ public class MediaFile {
     private Date childrenLastUpdated;
     private boolean present;
     private int version;
+    private float score;
 
     public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
@@ -443,6 +442,14 @@ public class MediaFile {
     public File getCoverArtFile() {
         // TODO: Optimize
         return coverArtPath == null ? null : new File(coverArtPath);
+    }
+
+    public float getScore() {
+        return score;
+    }
+
+    public void setScore(final float score) {
+        this.score = score;
     }
 
     @Override
