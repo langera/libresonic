@@ -19,17 +19,6 @@
 
 package org.libresonic.player.service.sonos;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.lang.StringUtils;
-import org.springframework.web.bind.ServletRequestUtils;
-
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -40,7 +29,7 @@ import com.sonos.services._1.MediaCollection;
 import com.sonos.services._1.MediaList;
 import com.sonos.services._1.MediaMetadata;
 import com.sonos.services._1.TrackMetadata;
-
+import org.apache.commons.lang.StringUtils;
 import org.libresonic.player.controller.CoverArtController;
 import org.libresonic.player.dao.MediaFileDao;
 import org.libresonic.player.domain.AlbumListType;
@@ -71,6 +60,14 @@ import org.libresonic.player.service.SonosService;
 import org.libresonic.player.service.TranscodingService;
 import org.libresonic.player.util.StringUtil;
 import org.libresonic.player.util.Util;
+import org.springframework.web.bind.ServletRequestUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Sindre Mehus
@@ -560,7 +557,7 @@ public class SonosHelper {
         MediaList result = new MediaList();
         result.setTotal(searchResult.getTotalHits());
         result.setIndex(offset);
-        result.setCount(searchResult.getMediaFiles().size());
+        result.setCount(searchResult.getSize());
         for (MediaFile mediaFile : searchResult.getMediaFiles()) {
             result.getMediaCollectionOrMediaMetadata().add(forMediaFile(mediaFile, username, request));
         }
