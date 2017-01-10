@@ -19,21 +19,7 @@
  */
 package org.libresonic.player.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
-
+import com.google.common.collect.Lists;
 import org.apache.lucene.analysis.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -66,9 +52,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
-
-import com.google.common.collect.Lists;
-
 import org.libresonic.player.Logger;
 import org.libresonic.player.dao.AlbumDao;
 import org.libresonic.player.dao.ArtistDao;
@@ -81,7 +64,21 @@ import org.libresonic.player.domain.SearchCriteria;
 import org.libresonic.player.domain.SearchResult;
 import org.libresonic.player.util.FileUtil;
 
-import static org.libresonic.player.service.SearchService.IndexType.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import static org.libresonic.player.service.SearchService.IndexType.ALBUM;
+import static org.libresonic.player.service.SearchService.IndexType.ALBUM_ID3;
+import static org.libresonic.player.service.SearchService.IndexType.ARTIST;
+import static org.libresonic.player.service.SearchService.IndexType.ARTIST_ID3;
+import static org.libresonic.player.service.SearchService.IndexType.SONG;
 
 /**
  * Performs Lucene-based searching and indexing.
@@ -217,13 +214,17 @@ public class SearchService {
             int start = Math.min(offset, topDocs.totalHits);
             int end = Math.min(start + count, topDocs.totalHits);
             for (int i = start; i < end; i++) {
-                Document doc = searcher.doc(topDocs.scoreDocs[i].doc);
+                final Document doc = searcher.doc(topDocs.scoreDocs[i].doc);
                 switch (indexType) {
                     case SONG:
                     case ARTIST:
                     case ALBUM:
                         MediaFile mediaFile = mediaFileService.getMediaFile(Integer.valueOf(doc.get(FIELD_ID)));
                         addIfNotNull(mediaFile, result.getMediaFiles());
+                        if (mediaFile != null) {
+                            final float score = topDocs.scoreDocs[i].score;
+                            mediaFile.setScore(score);
+                        }
                         break;
                     case ARTIST_ID3:
                         Artist artist = artistDao.getArtist(Integer.valueOf(doc.get(FIELD_ID)));
