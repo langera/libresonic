@@ -416,7 +416,7 @@
             </plugin>
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
-                <artifactId>maven-jetty-plugin</artifactId>
+                <artifactId>jetty-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
