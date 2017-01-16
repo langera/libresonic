@@ -258,6 +258,8 @@ public class SearchService {
             LOG.info("** Search ALL " + criteria.getQuery() + " - Revert to ALBUM");
             return singleSearch(criteria, musicFolders, IndexType.ALBUM);
         }
+        final int offset = criteria.getOffset();
+        criteria.setOffset(0);
         SearchResult albums = singleSearch(criteria, musicFolders, IndexType.ALBUM);
         SearchResult songs = singleSearch(criteria, musicFolders, IndexType.SONG);
         SearchResult artists = singleSearch(criteria, musicFolders, IndexType.ARTIST);
@@ -282,8 +284,9 @@ public class SearchService {
             mediaFile.setScore(albumToAdd.getValue());
             albums.addMediaFile(mediaFile);
         }
-        albums.setTotalHits(albums.getTotalHits() + addedAlbums.size()); // TODO not accurate, does it matter?
-        LOG.info("** Search ALL " + criteria.getQuery() + " added " + addedAlbums.size());
+        albums.setOffset(offset);
+        albums.setTotalHits(Math.max(albums.getSize(), albums.getTotalHits() + addedAlbums.size())); // TODO not accurate, does it matter?
+        LOG.info("** Search ALL " + criteria.getQuery() + ", Total Hits: " + albums.getTotalHits() + " added " + addedAlbums.size());
         return albums;
    }
 

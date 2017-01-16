@@ -38,6 +38,7 @@ import java.util.Set;
  */
 public class SearchResult {
 
+    private static final int MAX_LIMIT = 30;
     private final Map<File, MediaFile> mediaFilesByFileMap = new HashMap<>();
     private final List<Artist> artists = new ArrayList<Artist>();
     private final List<Album> albums = new ArrayList<Album>();
@@ -51,7 +52,7 @@ public class SearchResult {
     }
 
     public SearchResult(final int limit) {
-        this.limit = limit;
+        this.limit = Math.min(limit, MAX_LIMIT);
     }
 
     public List<MediaFile> getMediaFiles() {
@@ -63,7 +64,7 @@ public class SearchResult {
                 return diff == 0 ? 0 : diff < 0 ? 1 : -1;
             }
         });
-        return (mediaFiles.size() > limit) ? mediaFiles.subList(0, limit) : mediaFiles;
+        return (mediaFiles.size() > limit) ? mediaFiles.subList(offset, offset + limit) : mediaFiles;
     }
 
     public List<Artist> getArtists() {
