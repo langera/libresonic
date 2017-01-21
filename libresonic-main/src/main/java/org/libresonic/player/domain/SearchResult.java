@@ -22,13 +22,9 @@ package org.libresonic.player.domain;
 import org.libresonic.player.service.SearchService;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static java.util.Collections.emptyList;
 
 /**
  * The outcome of a search.
@@ -57,14 +53,19 @@ public class SearchResult {
 
     public List<MediaFile> getMediaFiles() {
         final ArrayList<MediaFile> mediaFiles = new ArrayList<>(mediaFilesByFileMap.values());
-        Collections.sort(mediaFiles, new Comparator<MediaFile>() {
+        mediaFiles.sort(new Comparator<MediaFile>() {
             @Override
             public int compare(MediaFile o1, MediaFile o2) {
                 final float diff = o1.getScore() - o2.getScore();
                 return diff == 0 ? 0 : diff < 0 ? 1 : -1;
             }
         });
-        return (mediaFiles.size() > limit) ? mediaFiles.subList(offset, offset + limit) : mediaFiles;
+        int toIndex = Math.min(mediaFiles.size(), offset + limit);
+        if (toIndex == 0) {
+            return emptyList();
+        }
+        int fromIndex = Math.min(offset, toIndex - 1);
+        return mediaFiles.subList(fromIndex, toIndex);
     }
 
     public List<Artist> getArtists() {
