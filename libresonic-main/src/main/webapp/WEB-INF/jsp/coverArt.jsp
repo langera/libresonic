@@ -16,6 +16,7 @@ PARAMETERS
   showChange: Whether to display a link for changing the cover art.
   appearAfter: Fade in after this many milliseconds, or nil if no fading in should happen.
   hideOverflow: Hide cover art overflow when height is greater than width
+  nocache: do not retrieve cached image after cover art change
 --%>
 <c:choose>
     <c:when test="${empty param.coverArtSize}">
@@ -63,6 +64,9 @@ PARAMETERS
             </c:if>
             <c:if test="${not empty param.playlistId}">
                 <c:param name="id" value="pl-${param.playlistId}"/>
+            </c:if>
+            <c:if test="${not empty param.nocache and param.nocache == 'true'}">
+                <c:param name="nocache" value="true"/>
             </c:if>
         </c:url>
 

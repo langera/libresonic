@@ -19,37 +19,9 @@
  */
 package org.libresonic.player.controller;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GradientPaint;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Semaphore;
-
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.springframework.web.bind.ServletRequestUtils;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.Controller;
-import org.springframework.web.servlet.mvc.LastModified;
-
 import org.libresonic.player.Logger;
 import org.libresonic.player.dao.AlbumDao;
 import org.libresonic.player.dao.ArtistDao;
@@ -68,6 +40,28 @@ import org.libresonic.player.service.SettingsService;
 import org.libresonic.player.service.TranscodingService;
 import org.libresonic.player.service.metadata.JaudiotaggerParser;
 import org.libresonic.player.util.StringUtil;
+import org.springframework.web.bind.ServletRequestUtils;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+import org.springframework.web.servlet.mvc.LastModified;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
 
 /**
  * Controller which produces cover art images.
@@ -128,7 +122,7 @@ public class CoverArtController implements Controller, LastModified {
         }
         try {
             File cachedImage = getCachedImage(coverArtRequest, size);
-            sendImage(cachedImage, response);
+            sendImage(cachedImage, response, coverArtRequest.isDisableCache());
         } catch (IOException e) {
             sendFallback(size, response);
         }
@@ -137,24 +131,31 @@ public class CoverArtController implements Controller, LastModified {
     }
 
     private CoverArtRequest createCoverArtRequest(HttpServletRequest request) {
+        CoverArtRequest coverArtRequest;
         String id = request.getParameter("id");
         if (id == null) {
             return null;
         }
 
         if (id.startsWith(ALBUM_COVERART_PREFIX)) {
-            return createAlbumCoverArtRequest(Integer.valueOf(id.replace(ALBUM_COVERART_PREFIX, "")));
+            coverArtRequest = createAlbumCoverArtRequest(Integer.valueOf(id.replace(ALBUM_COVERART_PREFIX, "")));
         }
-        if (id.startsWith(ARTIST_COVERART_PREFIX)) {
-            return createArtistCoverArtRequest(Integer.valueOf(id.replace(ARTIST_COVERART_PREFIX, "")));
+        else if (id.startsWith(ARTIST_COVERART_PREFIX)) {
+            coverArtRequest = createArtistCoverArtRequest(Integer.valueOf(id.replace(ARTIST_COVERART_PREFIX, "")));
         }
-        if (id.startsWith(PLAYLIST_COVERART_PREFIX)) {
-            return createPlaylistCoverArtRequest(Integer.valueOf(id.replace(PLAYLIST_COVERART_PREFIX, "")));
+        else if (id.startsWith(PLAYLIST_COVERART_PREFIX)) {
+            coverArtRequest = createPlaylistCoverArtRequest(Integer.valueOf(id.replace(PLAYLIST_COVERART_PREFIX, "")));
         }
-        if (id.startsWith(PODCAST_COVERART_PREFIX)) {
-            return createPodcastCoverArtRequest(Integer.valueOf(id.replace(PODCAST_COVERART_PREFIX, "")), request);
+        else if (id.startsWith(PODCAST_COVERART_PREFIX)) {
+            coverArtRequest = createPodcastCoverArtRequest(Integer.valueOf(id.replace(PODCAST_COVERART_PREFIX, "")), request);
         }
-        return createMediaFileCoverArtRequest(Integer.valueOf(id), request);
+        else {
+            coverArtRequest = createMediaFileCoverArtRequest(Integer.valueOf(id), request);
+        }
+        if (coverArtRequest != null) {
+            coverArtRequest.setDisableCache(request.getParameter("nocache") != null);
+        }
+        return coverArtRequest;
     }
 
     private CoverArtRequest createAlbumCoverArtRequest(int id) {
@@ -195,7 +196,12 @@ public class CoverArtController implements Controller, LastModified {
         return new MediaFileCoverArtRequest(mediaFile);
     }
 
-    private void sendImage(File file, HttpServletResponse response) throws IOException {
+    private void sendImage(File file, HttpServletResponse response, boolean disableCache) throws IOException {
+        if (disableCache) {
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("Expires", "0");
+        }
         response.setContentType(StringUtil.getMimeType(FilenameUtils.getExtension(file.getName())));
         InputStream in = new FileInputStream(file);
         try {
@@ -246,7 +252,7 @@ public class CoverArtController implements Controller, LastModified {
         synchronized (hash.intern()) {
 
             // Is cache missing or obsolete?
-            if (!cachedImage.exists() || request.lastModified() > cachedImage.lastModified()) {
+            if (!cachedImage.exists() || request.isDisableCache() || request.lastModified() > cachedImage.lastModified()) {
 //                LOG.info("Cache MISS - " + request + " (" + size + ")");
                 OutputStream out = null;
                 try {
@@ -372,6 +378,7 @@ public class CoverArtController implements Controller, LastModified {
     private abstract class CoverArtRequest {
 
         protected File coverArt;
+        private boolean disableCache;
 
         private CoverArtRequest() {
         }
@@ -415,6 +422,14 @@ public class CoverArtController implements Controller, LastModified {
         public abstract String getAlbum();
 
         public abstract String getArtist();
+
+        public boolean isDisableCache() {
+            return disableCache;
+        }
+
+        public void setDisableCache(final boolean disableCache) {
+            this.disableCache = disableCache;
+        }
     }
 
     private class ArtistCoverArtRequest extends CoverArtRequest {

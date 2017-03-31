@@ -2,17 +2,14 @@
 
 <html><head>
     <%@ include file="head.jsp" %>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/coverArtService.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/dwr/util.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/coverArtService.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/prototype.js"/>"></script>
-    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
     <script type="text/javascript" language="javascript">
 
         dwr.engine.setErrorHandler(null);
-        google.load('search', '1');
-        var imageSearch;
 
         function setImage(imageUrl) {
             $("wait").show();
@@ -36,88 +33,6 @@
             }
         }
 
-        function searchComplete() {
-
-            $("wait").hide();
-
-            if (imageSearch.results && imageSearch.results.length > 0) {
-
-                var images = $("images");
-                images.innerHTML = "";
-
-                var results = imageSearch.results;
-                for (var i = 0; i < results.length; i++) {
-                    var result = results[i];
-                    var node = $("template").cloneNode(true);
-
-                    // Rename results to https to avoid mixed contents.
-                    result.tbUrl = result.tbUrl.replace('http://', 'https://');
-
-                    var link = node.getElementsByClassName("search-result-link")[0];
-                    link.href = "javascript:setImage('" + result.url + "');";
-
-                    var thumbnail = node.getElementsByClassName("search-result-thumbnail")[0];
-                    thumbnail.src = result.tbUrl;
-
-                    var title = node.getElementsByClassName("search-result-title")[0];
-                    title.innerHTML = result.contentNoFormatting.truncate(30);
-
-                    var dimension = node.getElementsByClassName("search-result-dimension")[0];
-                    dimension.innerHTML = result.width + " × " + result.height;
-
-                    var url = node.getElementsByClassName("search-result-url")[0];
-                    url.innerHTML = result.visibleUrl;
-
-                    node.show();
-                    images.appendChild(node);
-                }
-
-                $("result").show();
-
-                addPaginationLinks(imageSearch);
-
-            } else {
-                $("noImagesFound").show();
-            }
-        }
-
-        function addPaginationLinks() {
-
-            // To paginate search results, use the cursor function.
-            var cursor = imageSearch.cursor;
-            var curPage = cursor.currentPageIndex; // check what page the app is on
-            var pagesDiv = document.createElement("div");
-            for (var i = 0; i < cursor.pages.length; i++) {
-                var page = cursor.pages[i];
-                var label;
-                if (curPage == i) {
-                    // If we are on the current page, then don"t make a link.
-                    label = document.createElement("b");
-                } else {
-
-                    // Create links to other pages using gotoPage() on the searcher.
-                    label = document.createElement("a");
-                    label.href = "javascript:imageSearch.gotoPage(" + i + ");";
-                }
-                label.innerHTML = page.label;
-                label.style.marginRight = "1em";
-                pagesDiv.appendChild(label);
-            }
-
-            // Create link to next page.
-            if (curPage < cursor.pages.length - 1) {
-                var next = document.createElement("a");
-                next.href = "javascript:imageSearch.gotoPage(" + (curPage + 1) + ");";
-                next.innerHTML = "<fmt:message key="common.next"/>";
-                next.style.marginLeft = "1em";
-                pagesDiv.appendChild(next);
-            }
-
-            var pages = $("pages");
-            pages.innerHTML = "";
-            pages.appendChild(pagesDiv);
-        }
-
         function search() {
 
             $("wait").show();
@@ -127,29 +42,23 @@
             $("errorDetails").hide();
             $("noImagesFound").hide();
 
-            var query = dwr.util.getValue("query");
-            imageSearch.execute(query);
+            var query = "https://www.discogs.com/search/?type=all&q=" + encodeURIComponent(dwr.util.getValue("query"));
+
+            var myWindow = window.open(query, "_blank", "width=800,height=500");
+            myWindow.focus();
         }
 
         function onLoad() {
-
-            imageSearch = new google.search.ImageSearch();
-            imageSearch.setSearchCompleteCallback(this, searchComplete, null);
-            imageSearch.setNoHtmlGeneration();
-            imageSearch.setResultSetSize(8);
-
-            google.search.Search.getBranding("branding");
 
             $("template").hide();
 
             search();
         }
-        google.setOnLoadCallback(onLoad);
 
 
     </script>
 </head>
-<body class="mainframe bgcolor1">
+<body class="mainframe bgcolor1" onload="javascript:onLoad();">
 <h1><fmt:message key="changecoverart.title"/></h1>
 <form action="javascript:search()">
     <table class="indent"><tr>
@@ -166,7 +75,7 @@
         <td style="padding-left:0.5em"><input type="submit" value="<fmt:message key="common.ok"/>"></td>
     </tr></table>
 </form>
-<sub:url value="main.view" var="backUrl"><sub:param name="id" value="${model.id}"/></sub:url>
+<sub:url value="main.view" var="backUrl"><sub:param name="id" value="${model.id}"/><sub:param name="nocache" value="true"/></sub:url>
 <div style="padding-top:0.5em;padding-bottom:0.5em">
     <div class="back"><a href="${backUrl}"><fmt:message key="common.back"/></a></div>
 </div>

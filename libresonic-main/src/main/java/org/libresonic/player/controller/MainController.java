@@ -19,6 +19,24 @@
  */
 package org.libresonic.player.controller;
 
+import org.libresonic.player.domain.CoverArtScheme;
+import org.libresonic.player.domain.MediaFile;
+import org.libresonic.player.domain.MediaFileComparator;
+import org.libresonic.player.domain.Player;
+import org.libresonic.player.domain.UserSettings;
+import org.libresonic.player.service.AdService;
+import org.libresonic.player.service.MediaFileService;
+import org.libresonic.player.service.PlayerService;
+import org.libresonic.player.service.RatingService;
+import org.libresonic.player.service.SecurityService;
+import org.libresonic.player.service.SettingsService;
+import org.springframework.web.bind.ServletRequestUtils;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.AbstractController;
+import org.springframework.web.servlet.view.RedirectView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,27 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.bind.ServletRequestUtils;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.AbstractController;
-import org.springframework.web.servlet.view.RedirectView;
-
-import org.libresonic.player.domain.CoverArtScheme;
-import org.libresonic.player.domain.MediaFile;
-import org.libresonic.player.domain.MediaFileComparator;
-import org.libresonic.player.domain.MusicFolder;
-import org.libresonic.player.domain.Player;
-import org.libresonic.player.domain.UserSettings;
-import org.libresonic.player.service.AdService;
-import org.libresonic.player.service.MediaFileService;
-import org.libresonic.player.service.PlayerService;
-import org.libresonic.player.service.RatingService;
-import org.libresonic.player.service.SecurityService;
-import org.libresonic.player.service.SettingsService;
 
 /**
  * Controller for the main page.
@@ -125,6 +122,9 @@ public class MainController extends AbstractController {
             map.put("sieblingAlbums", getSieblingAlbums(dir));
             map.put("artist", guessArtist(children));
             map.put("album", guessAlbum(children));
+        }
+        if (request.getParameter("nocache") != null) {
+            map.put("nocache", "true");
         }
 
         try {

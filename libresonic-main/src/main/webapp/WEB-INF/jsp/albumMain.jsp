@@ -390,6 +390,7 @@
                     <c:param name="coverArtSize" value="${model.coverArtSizeLarge}"/>
                     <c:param name="showZoom" value="true"/>
                     <c:param name="showChange" value="${model.user.coverArtRole}"/>
+                    <c:param name="nocache" value="${model.nocache}"/>
                 </c:import>
             </div>
         </td>
